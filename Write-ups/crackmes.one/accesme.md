@@ -1,5 +1,3 @@
-Crackmes.one: "Access me please" - Static Analysis 
-
 
 #  Crackmes.one: "Access me please" - Static Analysis & Reverse Engineering
 
