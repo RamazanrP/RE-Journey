@@ -63,6 +63,10 @@ def detect_centrality(func):
         score += 2
         reasons.append("Called from multiple locations → shared logic")
 
+    if func["xrefs"] == 0:
+    score += 2
+    reasons.append("No callers → possible entry/root function")
+
     return score, reasons
 
 def detect_complexity(func):
