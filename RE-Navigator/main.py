@@ -12,6 +12,8 @@ def main():
     lang = detect_language(functions)
     print(f"\n[+] Detected Language: {lang}\n")
 
+    important_funcs = set()
+
     for func in functions:
         score, reasons = analyze_function(func, lang)
         level = classify(score)
@@ -21,24 +23,35 @@ def main():
         for r in reasons:
             print(f"   → {r}")
 
-        if level in ["HIGH", "MEDIUM"]: # Spam gibi gözükmemesi için sadeec HİGH ve Medium'da notlar gösterilsin istedim
-            notes = detect_weak_signals(func)
+        if level in ["HIGH", "MEDIUM"]:
+            important_funcs.add(func["name"])
 
+            notes = detect_weak_signals(func)
             if notes:
                 print("   [Notes]")
                 for n in notes:
                     print(f"      - {n}")
 
-            print("\n[+] Call Chains:\n")
-            call_map = build_call_map(functions)
-            entry = find_entry(functions)
-
-            chains = dfs_paths(call_map, entry)
-
-            for chain in chains:
-                print(" → ".join(chain))
-
         print()
+
+    print("\n[+] Call Chains:\n")
+
+    call_map = build_call_map(functions)
+    entry = find_entry(functions)
+    chains = dfs_paths(call_map, entry)
+
+    def format_chain(chain): # Zincirde  HİGH seviyesindeki fonksiyonlar highlighted gözüksün diye [] koydum
+        out = []
+        for f in chain:
+            if f in important_funcs:
+                out.append(f"[{f}]")  # highlight
+            else:
+                out.append(f)
+        return " → ".join(out)
+
+    for chain in chains:
+        print(format_chain(chain))
+
 
 if __name__ == "__main__":
     main()
