@@ -5,6 +5,9 @@ from utils.color import colorize
 from analyzer.detectors import detect_weak_signals
 from analyzer.callgraph import build_call_map, find_entry, dfs_paths
 import json
+def load_data():
+    with open("data/functions.json") as f:
+        return json.load(f)
 
 def main():
     functions = load_data()
