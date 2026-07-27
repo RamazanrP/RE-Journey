@@ -4,7 +4,7 @@ from .detectors import (
     detect_centrality,
     detect_complexity,
     detect_sensitive_apis,
-    detect_language_specific
+    detect_language_specific,
     detect_entry_points 
 )
 
