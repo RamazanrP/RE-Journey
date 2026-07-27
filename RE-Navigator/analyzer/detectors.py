@@ -1,3 +1,25 @@
+def detect_entry_points(func, lang):
+    score = 0
+    reasons = []
+
+    name = func["name"].lower()
+
+    entry_keywords = [ # Tecrübeyle güncellenecektir
+        "main",
+        "entry",
+        "start",
+        "_start",
+        "winmain",
+        "begin"
+    ]
+
+    for k in entry_keywords:
+        if k in name:
+            score += 4
+            reasons.append(f"Possible entry point ('{k}' keyword in name)")
+
+    return score, reasons
+
 def detect_auth_logic(func):
     score = 0
     reasons = []
