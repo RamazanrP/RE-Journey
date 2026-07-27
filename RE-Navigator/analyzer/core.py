@@ -3,10 +3,11 @@ from .detectors import (
     detect_memory_risk,
     detect_centrality,
     detect_complexity,
-    detect_sensitive_apis
+    detect_sensitive_apis,
+    detect_language_specific
 )
 
-def analyze_function(func):
+def analyze_function(func, lang):
     total_score = 0
     all_reasons = []
 
@@ -15,11 +16,12 @@ def analyze_function(func):
         detect_memory_risk,
         detect_centrality,
         detect_complexity,
-        detect_sensitive_apis
+        detect_sensitive_apis,
+        detect_language_specific 
     ]
 
     for detector in detectors:
-        score, reasons = detector(func)
+        score, reasons = detector(func, lang)
         total_score += score
         all_reasons.extend(reasons)
 
