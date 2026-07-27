@@ -5,6 +5,7 @@ from .detectors import (
     detect_complexity,
     detect_sensitive_apis,
     detect_language_specific
+    detect_entry_points 
 )
 
 def analyze_function(func, lang):
