@@ -1,35 +1,52 @@
 # Ghidra ile Kullanım Rehberi
 
-Bu tool, Ghidra ile birlikte çalışarak binary içindeki fonksiyonları analiz eder.  
-Ghidra'dan alınan veriler `functions.json` dosyasına aktarılır ve analyzer bu dosya üzerinden çalışır.
+Bu tool, binary içindeki fonksiyonları analiz etmek için tasarlanmıştır.  
+Varsayılan kullanım **tek komutluk (CLI)** akıştır.
+
+Ghidra sadece **opsiyonel/advanced** kullanım içindir.
+
+# Hızlı Başlangıç (Önerilen)
+
+## 1. Workspace Hazırla
+
+Analiz edeceğiniz dosyaları **tek klasörde** toplayın. Bu **ZORUNLULUKTUR**.
+
+Örnek:
+
+```
+
+challenge_folder/
+├── chall
+├── readme.txt
+├── flag.txt
+```
+
+Crackme indiriyorsanız:
+- Arşivi açın (şifre: `crackmes.one`)
+- İçindeki binary dosyayı bu klasöre koyun
+
+
+## 2. Tek Komutla Çalıştır
+
+```bash
+python run.py ./challenge_folder
+````
+
+Tool otomatik olarak:
+
+* Binary dosyayı bulur
+* Analiz eder
+* Gerekli çıktıyı üretir
 
 ---
 
-## İlk Kurulum (Sadece 1 Kez Yapılacak)
+# Ghidra ile Manuel Kullanım (Opsiyonel)
 
-### 1. Ghidra'yı Aç
-- Binary dosyanı yükle
-- Auto-analysis işleminin tamamlanmasını bekle
+Eğer Ghidra üzerinden veri export etmek isterseniz:
 
----
+## 1. Script Manager → New Script
 
-### 2. Script Manager Aç
-
-
-Window → Script Manager
-
----
-
-### 3. Yeni Script Oluştur
-
-- **New Script** butonuna tıkla
-- Python seç
-- Script adı: export_functions.py
-
-
----
-
-### 4. Aşağıdaki Script'i Yapıştırın
+Aşağıdaki script'i ekleyin:
 
 ```python
 #@author you
@@ -99,67 +116,36 @@ with open(output_path, "w") as f:
     json.dump(functions, f, indent=2)
 
 print("[+] Export tamamlandı!")
-````
-
----
-
-### 5. Script'i Kaydet
-
-Artık bu işlemi tekrar yapmana gerek yok, kaydet, ilerde tek tuşla çalıştır.
-
----
-
-## Günlük Kullanım
-
-Her yeni binary için:
-
-1. Binary’yi Ghidra’da aç
-2. Script Manager’a gir
-3. `export_functions.py` script’ini seç
-4. **Run** tuşuna bas
-5. Çıktıyı şu konuma kaydet: `data/functions.json`
-
----
-
-## Analyzer'ı Çalıştır
-
-Terminalde:
-
-```bash
-python main.py
 ```
 
----
 
-## Opsiyonel Diğer Kullanım
+## 2. Script Ne Yapar?
 
-Script’i üst menüye ekleyebilirsiniz:
+Bu script:
 
-* Script’e sağ tık
-* **Add to Toolbar**
+* Fonksiyonları çıkarır
+* Call graph oluşturur
+* Stringleri toplar
+* Basit kontrol akışı bilgisi üretir
 
-Artık tek tıkla JSON export alabilirsiniz.
+Ve sonucu:
 
----
+```
+functions.json
+```
 
-## Bu Script Ne Yapar?
+olarak kaydeder.
 
-Şu bilgileri toplar:
 
-* Fonksiyon isimleri
-* Fonksiyon çağrıları (call graph)
-* Stringler
-* Instruction sayısı
-* Loop ve koşul bilgisi
+## 3. Ne Zaman Gerekli?
 
-Ve bunları `functions.json` dosyasına çevirir.
+* CLI otomasyonu yetmiyorsa
+* Özel analiz yapmak istiyorsanız
+* Ghidra içinden veri çekmek istiyorsanız
 
-Analyzer bu dosyayı kullanır.
 
----
+# Gelecek Planları
 
-## Gelecek Planları
-
-* Ghidra headless otomasyon
+* Headless Ghidra entegrasyonu
 * IDA desteği
-* Daha güçlü string ve crypto tespiti
+* Otomatik string/crypto tespiti
