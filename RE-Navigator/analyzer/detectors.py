@@ -100,3 +100,20 @@ def detect_sensitive_apis(func):
                 reasons.append(f"Uses sensitive API '{imp}'")
 
     return score, reasons
+
+def detect_weak_signals(func): # Bunu koyarken çekindim. Umarım kullancıda yanlış önyargı oluşturmaz
+    notes = []
+
+    if func["xrefs"] == 0:
+        notes.append("No callers (could be entry OR unused)")
+
+    if func["size"] < 50:
+        notes.append("Small function (could be trivial OR critical check)")
+
+    if len(func["strings"]) == 0:
+        notes.append("No visible strings (could be obfuscated)")
+
+    if func["conditions"] <= 1:
+        notes.append("Low branching (simple logic)")
+
+    return notes
