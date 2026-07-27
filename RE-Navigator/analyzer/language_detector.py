@@ -1,27 +1,35 @@
-def detect_language(functions):
-    cpp_score = 0
+def detect_language_specific(func, lang):
+    score = 0
+    reasons = [] # Hangi dil olduğunu nedeniyle beraber yazıyorum ki ilerde refleks olsun
 
-    for func in functions:
-        name = func["name"]
-        strings = " ".join(func["strings"]).lower()
-        calls = " ".join(func["calls"]).lower()
+    name = func["name"]
 
-        if name.startswith("_Z"):
-            cpp_score += 3
+    if lang == "C++":
 
         if "::" in name:
-            cpp_score += 2
+            score += 2
+            reasons.append("C++ class/namespace function")
 
-        if "std::" in strings:
-            cpp_score += 2
+        if name.startswith("_Z"):
+            score += 3
+            reasons.append("Mangled symbol → compiled C++")
 
-        if "vtable" in strings or "__cxa" in calls:
-            cpp_score += 3
+        if "ctor" in name.lower() or "dtor" in name.lower():
+            score += 2
+            reasons.append("Constructor/Destructor detected")
 
-        if "new" in calls or "delete" in calls:
-            cpp_score += 2
+        if any("vtable" in s.lower() for s in func["strings"]):
+            score += 3
+            reasons.append("Virtual table usage → polymorphism")
 
-    if cpp_score >= 5: # Yukarda scoring için biraz uzun tuttum evet ama C++ olduğu takdirde kesinlikle >5 olacaktır. Kısacası sorun yok 
-        return "C++"
-    else:
-        return "C"
+    elif lang == "C":
+
+        if "main" in name.lower():
+            score += 2
+            reasons.append("Main function → entry candidate")
+
+        if func["conditions"] > 5 and func["loops"]:
+            score += 2
+            reasons.append("Procedural control-heavy logic")
+
+    return score, reasons
