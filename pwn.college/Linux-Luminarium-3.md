@@ -166,3 +166,79 @@ Son challenge’da `/challenge/run`, `rm` ile flag’i siliyordu. Çözüm:
 - Bu teknik, ileride yetki yükseltme (privilege escalation) ve command injection gibi güvenlik konularında kritik rol oynar.
 - Mutlak yol kullanımı, PATH değişikliklerinden etkilenmemenin en garantili yoludur.
 - `read` gibi bash builtin’leri, PATH’ten bağımsız çalıştığı için güvenli alternatifler sunar.
+
+## Silly Shenanigans Modülü 
+
+Bu modül, sistemdeki kullanıcıların başlangıç script'leri (`.bashrc`), paylaşılan dizinler, süreç argümanları ve dosya izinleri gibi zafiyetlerden nasıl yararlanılabileceğini öğretti. Her seviye, farklı bir saldırı vektörünü ve bunlara karşı alınabilecek önlemleri tecrübe ettirdi.
+
+---
+
+## 1. `.bashrc` Sömürüsü
+
+`.bashrc` dosyası, kullanıcı shelli her başlatıldığında otomatik olarak çalıştırılır. Eğer bu dosyaya yazma izniniz varsa, içine komut ekleyerek hedef kullanıcının oturumunda kod çalıştırabilirsiniz.
+
+- **Yöntem:** `.bashrc` dosyasının sonuna `cat /flag` gibi bir komut eklemek.
+- **Sonuç:** Zardus giriş yaptığında flag ekrana basılır.
+- **Önlem:** `.bashrc` dosyasını sadece sahibinin yazabilmesi için `chmod 600` ile korumak.
+
+---
+
+## 2. İnteraktif Programları Taklit Etme (`flag_checker` örneği)
+
+Eğer hedef kullanıcı bir programı interaktif olarak çalıştırıp içine hassas veri (örneğin flag) giriyorsa, bu programı taklit ederek veriyi yakalayabilirsiniz.
+
+- **Yöntem:** `.bashrc` içine `flag_checker` adında bir fonksiyon veya alias tanımlamak. Bu taklit, önce programın çıktısını taklit eder (`echo "Type the flag"`), sonra kullanıcının girdiğini okur (`read`) ve ekrana basar.
+- **Sonuç:** Zardus flag'i manuel girdiğinde, taklit fonksiyon bu girdiyi yakalar ve size gösterir.
+- **Önlem:** Hassas verileri interaktif olarak girmekten kaçınmak veya programın bütünlüğünü doğrulamak (hash kontrolü vb.).
+
+---
+
+## 3. World-Writable Dizinler ve Dosya Silme/Yeniden Oluşturma
+
+Eğer bir dizin world-writable ise, o dizindeki dosyaları (dosyanın kendi izinleri ne olursa olsun) silebilir veya taşıyabilirsiniz.
+
+- **Yöntem:** Zardus'un home dizini world-writable olduğu için `.bashrc` dosyasını sildik ve yerine kendi içeriğimizi yazdık. Ancak orijinal `.bashrc` içeriğini kaybetmemek için önce yedekledik.
+- **Sorun:** Dosya sahipliği değiştiği için yazma izni kazandık, ama dosya sahibi `zardus` olarak kaldıysa yazamayabiliriz.
+- **Çözüm:** Dosyayı sildikten sonra yeni dosya oluşturduğumuzda sahibi `hacker` olur, böylece istediğimizi ekleyebiliriz.
+- **Önlem:** World-writable dizinlerde `sticky bit` (`chmod +t`) kullanmak, böylece dosyaları yalnızca sahiplerinin silmesini sağlamak.
+
+---
+
+## 4. Sembolik Link ile Dosya Yönlendirme (`ln -s`)
+
+Sembolik link, bir dosyayı başka bir dosyaya yönlendiren özel bir dosya türüdür. Eğer bir dizine yazma izniniz varsa, bu dizindeki bir dosyayı link ile değiştirebilirsiniz.
+
+- **Yöntem:** `/tmp/collab/evil-commands.txt` dosyasını sildik ve yerine `/home/zardus/.bashrc` dosyasına sembolik link oluşturduk.
+- **Sonuç:** Zardus, `evil-commands.txt` dosyasına `cat /flag` eklediğinde, bu aslında `.bashrc` dosyasının sonuna eklenmiş oldu. Zardus tekrar giriş yaptığında `.bashrc` çalıştı ve flag geldi.
+- **Önlem:** Paylaşılan dizinlerde `sticky bit` kullanmak ve sembolik link oluşturmayı kısıtlamak (mount seçenekleri ile).
+
+---
+
+## 5. Süreç Argümanları ile Şifre Görme (`ps aux`)
+
+Bir program çalıştırıldığında, komut satırı argümanları `ps` ile görülebilir. Eğer bu argümanlar hassas veri içeriyorsa (örneğin şifre), bu veri sızdırılabilir.
+
+- **Yöntem:** Zardus'un bir otomasyon script'ini çalıştırdığını ve şifresini argüman olarak verdiğini varsaydık. `ps aux | grep zardus` ile bu süreci ve argümanlarını listeledik. Şifreyi bulup `su zardus` ile geçiş yaptık.
+- **Sonuç:** Zardus'un `sudo` yetkisini kullanarak flag'i okuduk.
+- **Önlem:** Hassas bilgiler asla komut satırı argümanı olarak verilmemeli; bunun yerine ortam değişkenleri veya interaktif girdi kullanılmalıdır.
+
+---
+
+## 6. World-Readable `.bashrc` ve API Anahtarları
+
+`.bashrc` dosyası varsayılan olarak world-readable (herkes tarafından okunabilir) olabilir. Eğer bu dosyada API anahtarları veya şifreler saklanıyorsa, sistemdeki diğer kullanıcılar bunları okuyabilir.
+
+- **Yöntem:** `cat /home/zardus/.bashrc` ile dosyayı okuduk ve `FLAG_GETTER_API_KEY` değerini bulduk. Ardından `flag_getter --xxx <anahtar>` çalıştırarak flag'i aldık.
+- **Önlem:** Hassas veriler `.bashrc`'de saklanmamalı; bunun yerine `chmod 600` ile korunan ayrı bir dosyada tutulmalı veya bir şifre yöneticisi kullanılmalıdır.
+
+---
+
+## Modülden Çıkarılan Genel Dersler
+
+- **Başlangıç script'leri (`.bashrc`)** güçlü araçlardır; hem kullanıcı hem de saldırgan için.
+- **Dosya izinleri** (world-writable, world-readable) çoğu zaman göz ardı edilir, ancak büyük güvenlik açıklarına yol açar.
+- **Sembolik linkler** ve **sticky bit** gibi özellikler, dosya sistemi güvenliğinde kritik rol oynar.
+- **Süreç argümanları** asla hassas veri içermemelidir; `ps` ile herkes görebilir.
+- Paylaşımlı ortamlarda, kullanıcılar kendi dosyalarının izinlerini ve hangi verileri açığa çıkardıklarını dikkatlice değerlendirmelidir.
+
+Bu modül, sistem güvenliğinin sadece yetkilerle değil, aynı zamanda kullanıcı davranışları ve varsayılan ayarlarla da ilgili olduğunu öğretti.
