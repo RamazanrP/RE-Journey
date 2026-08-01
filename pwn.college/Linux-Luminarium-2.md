@@ -18,7 +18,7 @@ Bu modülde amaç, komut çıktılarındaki (stdout) ham veriyi istenilen format
   => *Mantık:* Soldaki setteki her karakteri, sağdaki setteki birebir aynı sıradaki karakterle değiştir.
 
 - **Karakter Silme (Delete):**
-  Bazı zorluklarda flag'in arasına saçma sapan `^` ve `%` işaretleri serpiştirilmişti. Bunlardan kurtulmak için:
+  Bazı zorluklarda flag'in arasına `^` ve `%` işaretleri serpiştirilmişti. Bunlardan kurtulmak için:
   ```bash
   /challenge/run | tr -d 'XX'
   ```
