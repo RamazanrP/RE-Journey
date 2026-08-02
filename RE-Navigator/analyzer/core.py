@@ -5,7 +5,8 @@ from .detectors import (
     detect_complexity,
     detect_sensitive_apis,
     detect_language_specific,
-    detect_entry_points 
+    detect_entry_points,
+    detect_win_functions
 )
 
 def analyze_function(func, lang):
@@ -18,7 +19,8 @@ def analyze_function(func, lang):
         detect_centrality,
         detect_complexity,
         detect_sensitive_apis,
-        detect_language_specific 
+        detect_language_specific,
+        detect_win_functions,
     ]
 
     for detector in detectors:
