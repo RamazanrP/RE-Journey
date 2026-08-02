@@ -24,7 +24,7 @@ def analyze_function(func, lang):
     ]
 
     for detector in detectors:
-        score, reasons = detector(func, lang)
+        score, reasons = detector(func)
         total_score += score
         all_reasons.extend(reasons)
 
