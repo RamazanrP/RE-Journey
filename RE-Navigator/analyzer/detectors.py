@@ -4,27 +4,40 @@ def detect_entry_points(func, lang):
 
     name = func["name"].lower()
 
-    entry_keywords = [ # Tecrübeyle güncellenecektir
-        "main",
-        "entry",
-        "start",
+    if name == "main":
+        score += 10
+        reasons.append("Exact match: 'main' (primary entry point)")
+        return score, reasons  # main görünce diğerlerine bakmadan çıksın istedim
+
+    strong_candidates = [
         "_start",
+        "start",
+        "init",
+        "entry"
+    ]
+
+    for k in strong_candidates:
+        if name == k:
+            score += 6
+            reasons.append(f"Strong entry candidate ('{k}')")
+
+    weak_keywords = [
+        "main",
         "winmain",
         "begin"
     ]
 
-    for k in entry_keywords:
+    for k in weak_keywords:
         if k in name:
-            score += 4
-            reasons.append(f"Possible entry point ('{k}' keyword in name)")
+            score += 3
+            reasons.append(f"Weak entry signal ('{k}' in name)")
 
     return score, reasons
-
 def detect_auth_logic(func):
     score = 0
     reasons = []
 
-    keywords = ["password", "pass", "auth", "login", "key", "token", "flag"] # Crackmes tecrübem arttıkça buraya gelip bu listeyi büyüteceğim
+    keywords = ["password", "pass", "auth", "login", "key", "token", "flag", "win"] # Crackmes tecrübem arttıkça buraya gelip bu listeyi büyüteceğim
 
     for s in func["strings"]:
         for k in keywords:
