@@ -37,7 +37,7 @@ def detect_auth_logic(func):
     score = 0
     reasons = []
 
-    keywords = ["password", "pass", "auth", "login", "key", "token", "flag", "win"] # Crackmes tecrübem arttıkça buraya gelip bu listeyi büyüteceğim
+    keywords = ["password", "pass", "auth", "login", "key", "token", "flag"] # Crackmes tecrübem arttıkça buraya gelip bu listeyi büyüteceğim
 
     for s in func["strings"]:
         for k in keywords:
@@ -51,6 +51,37 @@ def detect_auth_logic(func):
 
     return score, reasons
 
+def detect_win_functions(func): # fonksiyon ismiyle bize "Buraya ulaşmaya çalış" diyorsa eğer bunu tespit etmek için
+    score = 0
+    reasons = []
+
+    name = func["name"].lower()
+
+    win_keywords = [
+        "win",
+        "success",
+        "correct",
+        "flag",
+        "congrats",
+        "good",
+        "right"
+    ]
+
+    for k in win_keywords:
+        if k in name:
+            score += 6
+            reasons.append(f"Function name suggests success path ('{k}')")
+
+    for s in func["strings"]:
+        s_lower = s.lower()
+
+        for k in win_keywords:
+            if k in s_lower:
+                score += 4
+                reasons.append(f"String suggests success output ('{k}')")
+
+    return score, reasons
+    
 def detect_memory_risk(func):
     score = 0
     reasons = []
