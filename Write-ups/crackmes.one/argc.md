@@ -1,247 +1,264 @@
-# CrackMe Write-up — argc (ENG & TR)
+# CrackMe Write-up — argc (Corrected) (ENG & TR)
+
+# 🇬🇧 English
 
 ## Overview
 
-This is a very simple crackme, but it highlights an important concept in reverse engineering:  
-**understanding how program arguments (`argv`) are stored and accessed in memory.**
+At first glance, this crackme appears to be a simple argument comparison challenge.  
+However, there is a hidden twist in how the program handles `argc`, which makes the solution less straightforward than expected.
 
-While solving it, I initially overthought pointer arithmetic due to `char**` usage, but the actual logic turned out to be much simpler
+---
 
-## Step 1 — Understanding Parameters
+## Initial Analysis
 
-Ghidra shows:
-
-```c
-int param_1
-long param_2
-```
-
-But in reality, this is:
+From decompilation:
 
 ```c
-int argc
-char **argv
-```
+int main(int argc, char **argv)
+````
 
-So:
-
-* `param_1` → `argc`
-* `param_2` → `argv`
-
-## Step 2 — Argument Check
+The program performs:
 
 ```c
-if (param_1 == 3)
+if (argc == 3) {
+    if (strcmp(argv[1], argv[2]) == 0) {
+        puts(flag);
+    }
+}
 ```
 
-The program expects exactly **3 arguments**:
+This suggests:
 
-```bash
-./argc arg1 arg2
-```
+→ The program expects exactly 2 user arguments
+→ And both must be identical
 
-Where:
-
-* `argv[0]` → program name (`./argc`)
-* `argv[1]` → first input
-* `argv[2]` → second input
-
-
-## Step 3 — The Critical Line
-
-```c
-strcmp(*(char **)(param_2 + 8), *(char **)(param_2 + 0x10));
-```
-
-This looks confusing at first but breaking it down:
-
-### Memory Layout (64-bit)
-
-Each pointer = **8 bytes**
-
-| Expression       | Meaning |
-| ---------------- | ------- |
-| `param_2 + 0`    | argv[0] |
-| `param_2 + 8`    | argv[1] |
-| `param_2 + 0x10` | argv[2] |
-
-So this becomes:
-
-```c
-strcmp(argv[1], argv[2]);
-```
-
-## Step 4 — What `strcmp` Does
-
-```c
-strcmp(a, b) == 0
-```
-
-Means:
-
-=> Strings `a` and `b` are exactly the same
-
-## Step 5 — Key Insight
-
-At first, it may seem like the program is checking a hidden password.
-It's as if the first input has to match the characters after the 8th one, and the second input has to match the characters after the 16th one, but actually:
-there is **no hardcoded password**.
-
-The program only checks:
-
-=> Are the two inputs identical?
-
-
-## Solution
-
-Any identical arguments will pass:
+So a natural attempt would be:
 
 ```bash
 ./argc a a
 ```
 
+However, this does **not work**.
+
+## Investigating the Issue
+
+Despite providing correct arguments, the program outputs:
+
+```
+please try again...
+```
+
+This indicates that:
+
+→ `argc == 3` condition is **not satisfied**
+
+## Hidden Behavior in `_start`
+
+Looking at the program entry point:
+
+```c
+__libc_start_main(main, argc >> 1, ...)
+```
+
+This is the key detail.
+
+→ `argc` is shifted right by 1
+→ Meaning: `argc = argc / 2`
+
+## Impact of argc Manipulation
+
+The program checks:
+
+```c
+if (argc == 3)
+```
+
+But this is after shifting.
+
+So we must solve:
+
+```
+real_argc >> 1 = 3
+```
+
+Possible values:
+
+| Real argc | After shift |
+| --------- | ----------- |
+| 6         | 3           |
+| 7         | 3           |
+
+## Translating to User Input
+
+Remember:
+
+→ `argc = number of arguments + 1`
+
+So:
+
+* argc = 6 → 5 arguments
+* argc = 7 → 6 arguments
+
+## Final Condition
+
+To pass the program:
+
+1. Provide enough arguments so that:
+
+   ```
+   argc >> 1 == 3
+   ```
+
+2. Ensure:
+
+   ```
+   argv[1] == argv[2]
+   ```
+
+## Solution
+
+Example:
+
+```bash
+./argc A A B C D
+```
+
+Here:
+
+* Total argc = 6 → (6 >> 1) = 3 
+* `argv[1] == argv[2]` → A == A 
+
+
 ## Result
 
-When inputs match:
-
-```text
+```
 correct!
 ```
 
-## Lessons Learned
+## Key Takeaways
 
-### 1. Pointer Arithmetic Matters
+* Program behavior can be altered before reaching `main`
+* `_start` may manipulate arguments
+* Always verify assumptions about `argc`
+* Simple logic can hide subtle tricks
 
-Offsets like:
+## Final Note
 
-* `+8`
-* `+0x10`
+This challenge is not about string comparison alone, but about:
 
-indicate **64-bit architecture** (8-byte pointers).
+→ understanding program initialization flow
 
-### 2. Don’t Overthink `char **`
+---
 
-Seeing:
-
-```c
-(char **)
-```
-
-can make things look more complex than they are.
-
-In this case, it’s just accessing:
-
-```c
-argv[index]
-```
-
-## Final Thoughts
-
-Even though this crackme is simple, it reinforces a critical RE mindset:
-
-* Not every challenge hides a secret
-* Sometimes the logic itself *is* the challenge
-
-This one was a good reminder to stay grounded and not overcomplicate pointer-based code.
-
-# CrackMe Write-up — argc (TR)
+# 🇹🇷 Türkçe
 
 ## Genel Bakış
 
-Bu crackme oldukça basit, ancak reverse engineering açısından önemli bir noktayı hatırlatıyor:  
-program argümanlarının (`argv`) bellekte nasıl tutulduğu ve erişildiği.
+İlk bakışta bu crackme basit bir argüman karşılaştırması gibi görünüyor.
+Ancak programın `argc` değerini değiştirmesi nedeniyle çözüm beklenenden daha farklıymış.
 
-Çözerken başlangıçta `char **` ve pointer arithmetic yüzünden fazla düşündüm, fakat aslında mantık oldukça basitti.
+---
 
-## Analiz
-
-Ghidra’da `main` fonksiyonu şu şekilde görünüyor:
-
-`main(int param_1, long param_2)`
-
-Buradaki gerçek karşılık:
-
-- `param_1` → `argc`
-- `param_2` → `argv`
-
-## Argüman Kontrolü
+## İlk Analiz
 
 Program şu kontrolü yapıyor:
 
-`param_1 == 3`
+```c
+if (argc == 3)
+```
 
-Yani program tam olarak 3 argüman bekliyor:
+ve ardından:
 
-- `argv[0]` → program adı
-- `argv[1]` → birinci input
-- `argv[2]` → ikinci input
+```c
+strcmp(argv[1], argv[2])
+```
 
-## Kritik Nokta
+Buradan şu çıkarım yapılır:
 
-Kilit satır:
+→ 2 argüman girilmeli
+→ bu iki argüman aynı olmalı
 
-`strcmp(*(char **)(param_2 + 8), *(char **)(param_2 + 0x10))`
+Ama:
 
-İlk bakışta karmaşık görünüyor, ama aslında şu anlama geliyor:
+```bash
+./argc a a
+```
 
-- `param_2 + 8` → `argv[1]`
-- `param_2 + 0x10` → `argv[2]`
+çalışmadığını fark ettim.
 
-Yani bu ifade:
+## Sorunun Kaynağı
 
-`strcmp(argv[1], argv[2])`
+Program doğru input verilmesine rağmen hata verir.
 
-## strcmp Ne Yapıyor?
+Bu da şunu gösterir:
 
-`strcmp(a, b) == 0` demek:
+→ `argc == 3` şartı sağlanmıyor
 
-→ iki string tamamen aynı
+## `_start` İçindeki Trick
 
-## Asıl Mantık
+Program başlangıcında:
 
-Başta gizli bir şifre aranıyor gibi görünüyor. Sanki girilen ilk inputun 8. karakterden sonrası ile ikinci inputun 16. karakterinden sonrası aynı olmak zorundaymış gibi ama aslında:
+```c
+__libc_start_main(main, argc >> 1, ...)
+```
 
-→ program herhangi bir şifre kontrol etmiyor
+bulunur.
 
-Sadece şunu kontrol ediyor:
+Yani:
 
-→ girilen iki input aynı mı?
+* `argc` sağa kaydırılıyor → `argc = argc / 2`
 
+## Etkisi
+
+Program aslında şunu kontrol ediyor:
+
+```
+(argc / 2) == 3
+```
+
+Yani gerçek `argc` 6 veya 7 olmalı
+
+## Kullanıcı Input’una Çeviri
+
+`argc = arg sayısı + 1`
+
+Buna göre:
+
+* argc = 6 → 5 argüman
+* argc = 7 → 6 argüman
+
+## Doğru Koşul
+
+Programı geçmek için:
+
+1. Yeterli sayıda argüman verilmeli
+2. İlk iki argüman **aynı** olmalı
 
 ## Çözüm
 
-Herhangi iki aynı değer çalışır:
+```bash
+./argc A A B C D
+```
 
-`./argc a a`  
-`./argc hello hello`
+* argc = 6 → 6 >> 1 = 3 => Kabul edilir
+* argv[1] == argv[2] => Kabul edilir
+
+---
 
 ## Sonuç
 
-Eğer iki input aynıysa program başarı mesajı verir.
+```
+correct!
+```
 
 ## Öğrenilenler
 
-### 1. Pointer Arithmetic Yanıltabilir
-
-`+8` ve `+0x10` offset’leri:
-
-→ 64-bit sistemde pointer boyutunun 8 byte olduğunu gösterir
-
-### 2. `char **` Her Zaman Karmaşık Değildir
-
-`(char **)` görünce fazla derine inmek kolaydır.
-
-Ama çoğu zaman bu sadece:
-
-`argv[index]`
-
-demektir.
+* `main` öncesi davranış önemli olabilir
+* `_start` fonksiyonu göz ardı edilmemeli
+* `argc` her zaman göründüğü gibi değildir
 
 ## Son Not
 
-Bu crackme basit olsa da önemli bir şeyi hatırlatıyor:
+Bu challenge aslında şunu öğretiyor:
 
-- Her zaman gizli veri aranmaz  
-- Bazen çözüm, doğrudan programın mantığındadır  
-
-Bu da gereksiz overthinking yapmamayı öğreten güzel bir örnek oldu.
+→ sadece kodu değil, programın nasıl başlatıldığını da analiz et
