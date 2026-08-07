@@ -146,21 +146,53 @@ input = inverse_sbox[output] XOR index
 ```
 
 ## 8. Python Solution
+```py
+sbox = list(range(256))
 
-Steps:
+# XORSHIFT RNG
+def xorshift(state):
+    state ^= (state << 13) & 0xffffffff
+    state ^= (state >> 17) & 0xffffffff
+    state ^= (state << 5) & 0xffffffff
+    return state & 0xffffffff
 
-1. Rebuild S-box
-2. Compute inverse S-box
-3. Use target bytes
-4. Reverse transformation
+# Shuffle
+state = 0x12345678
 
-Core logic:
+for i in range(255, -1, -1):
+    j = state % (i + 1)
+    sbox[i], sbox[j] = sbox[j], sbox[i]
+    state = xorshift(state)
 
-```python
-val = inv_sbox[target[i]]
-inp = val ^ index
+# inverse S-box
+inv_sbox = [0] * 256
+for i in range(256):
+    inv_sbox[sbox[i]] = i
+
+target = [
+    0xff, 0x68, 0x31, 0x7c,
+    0x90, 0x57, 0x29, 0x97,
+    0xd9, 0x83, 0xbe, 0x68
+]
+
+key = []
+
+for i in range(12):
+    # index calculation (in binary: (-0x5b - base + i))
+    index = (i - 0x5b) & 0xff
+
+    # inverse
+    val = inv_sbox[target[i]]
+
+    # input byte
+    inp = val ^ index
+    key.append(inp)
+
+key_str = ''.join(chr(x) for x in key)
+
+print("License key:", key_str)
+print("Raw bytes:", key)
 ```
-
 ## 9. Result
 
 Recovered key:
@@ -345,21 +377,53 @@ input = inverse_sbox[output] XOR index
 ```
 
 ## 8. Python ile Çözüm
+```py
+sbox = list(range(256))
 
-Adımlar:
+# XORSHIFT RNG
+def xorshift(state):
+    state ^= (state << 13) & 0xffffffff
+    state ^= (state >> 17) & 0xffffffff
+    state ^= (state << 5) & 0xffffffff
+    return state & 0xffffffff
 
-1. S-box oluştur
-2. Ters S-box oluştur
-3. Target değerini al
-4. Her byte için ters transform uygula
+# Shuffle
+state = 0x12345678
 
-Kod:
+for i in range(255, -1, -1):
+    j = state % (i + 1)
+    sbox[i], sbox[j] = sbox[j], sbox[i]
+    state = xorshift(state)
 
-```python
-val = inv_sbox[target[i]]
-inp = val ^ index
+# inverse S-box
+inv_sbox = [0] * 256
+for i in range(256):
+    inv_sbox[sbox[i]] = i
+
+target = [
+    0xff, 0x68, 0x31, 0x7c,
+    0x90, 0x57, 0x29, 0x97,
+    0xd9, 0x83, 0xbe, 0x68
+]
+
+key = []
+
+for i in range(12):
+    # index calculation (in binary: (-0x5b - base + i))
+    index = (i - 0x5b) & 0xff
+
+    # inverse
+    val = inv_sbox[target[i]]
+
+    # input byte
+    inp = val ^ index
+    key.append(inp)
+
+key_str = ''.join(chr(x) for x in key)
+
+print("License key:", key_str)
+print("Raw bytes:", key)
 ```
-
 ## 9. Sonuç
 
 Elde edilen key:
